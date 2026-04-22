@@ -1,0 +1,54 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build iOS app (unsigned)
+        working-directory: ios
+        run: |
+          mkdir -p build
+          xcodebuild \
+            -project VocabApp.xcodeproj \
+            -scheme VocabApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            -archivePath build/VocabApp.xcarchive \
+            archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty || true
+
+      - name: Package IPA
+        working-directory: ios
+        run: |
+          mkdir -p build/Payload
+          cp -r build/VocabApp.xcarchive/Products/Applications/VocabApp.app build/Payload/
+          cd build
+          zip -r VocabApp.ipa Payload/
+          echo "IPA size: $(du -h VocabApp.ipa | cut -f1)"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VocabApp-ipa
+          path: ios/build/VocabApp.ipa
+          retention-days: 30

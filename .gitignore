@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+*.xcuserstate
+*.xcworkspace
+xcuserdata/
+
+# Swift Package Manager
+.swiftpm/
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Temporary
+*.tmp
+*.bak

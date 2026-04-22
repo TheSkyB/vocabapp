@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="背单词">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="manifest.json">
+  <title>背单词</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <header id="header">
+    <button class="header-btn hidden" id="header-back" onclick="App.goBack()">←</button>
+    <span id="header-title">背单词</span>
+    <span id="header-right"></span>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main">
+
+    <!-- ===== 首页 ===== -->
+    <div class="view active" id="view-home">
+      <div class="home-hero">
+        <div class="hero-stats">
+          <div class="stat-card"><div class="stat-num" id="stat-learned">0</div><div class="stat-label">已学单词</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-review">0</div><div class="stat-label">今日复习</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-streak">0</div><div class="stat-label">连续天数</div></div>
+        </div>
+      </div>
+      <div class="section-title">今日任务</div>
+      <div class="task-cards">
+        <div class="task-card" onclick="App.goTo('mode-select')">
+          <span class="task-icon">📚</span>
+          <div><div class="task-name">学习新词</div><div class="task-desc">开始今日学习</div></div>
+          <div class="task-progress"><span id="task-new-count">0</span>词 →</div>
+        </div>
+        <div class="task-card" onclick="ReviewSession.start()">
+          <span class="task-icon">🔄</span>
+          <div><div class="task-name">复习单词</div><div class="task-desc">巩固记忆</div></div>
+          <div class="task-progress"><span id="task-review-count">0</span>词 →</div>
+        </div>
+        <div class="task-card" onclick="App.goTo('wrong-book')">
+          <span class="task-icon">❌</span>
+          <div><div class="task-name">错题本</div><div class="task-desc">消灭错误</div></div>
+          <div class="task-progress"><span id="task-wrong-count">0</span>词 →</div>
+        </div>
+        <div class="task-card" onclick="App.goTo('starred')">
+          <span class="task-icon">⭐</span>
+          <div><div class="task-name">收藏夹</div><div class="task-desc">重点单词</div></div>
+          <div class="task-progress"><span id="task-starred-count">0</span>词 →</div>
+        </div>
+      </div>
+      <div class="section-title">当前词库</div>
+      <div class="book-list" id="home-book"></div>
+    </div>
+
+    <!-- ===== 模式选择 ===== -->
+    <div class="view" id="view-mode-select">
+      <div class="mode-select">
+        <h2>选择学习模式</h2>
+        <div class="mode-grid">
+          <div class="mode-card" onclick="LearnSession.start('card')">
+            <span class="mode-emoji">🃏</span>
+            <div class="mode-name">卡片模式</div>
+            <div class="mode-desc">翻转查看释义</div>
+          </div>
+          <div class="mode-card" onclick="LearnSession.start('choice')">
+            <span class="mode-emoji">✅</span>
+            <div class="mode-name">选择题</div>
+            <div class="mode-desc">看词选义</div>
+          </div>
+          <div class="mode-card" onclick="LearnSession.start('reverse')">
+            <span class="mode-emoji">🔀</span>
+            <div class="mode-name">反向选择</div>
+            <div class="mode-desc">看义选词</div>
+          </div>
+          <div class="mode-card" onclick="LearnSession.start('spell')">
+            <span class="mode-emoji">⌨️</span>
+            <div class="mode-name">拼写模式</div>
+            <div class="mode-desc">拼写单词</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 卡片学习 ===== -->
+    <div class="view" id="view-card-learn">
+      <div class="learn-progress-bar">
+        <div class="progress-track"><div class="progress-fill" id="card-progress-fill"></div></div>
+        <span class="progress-text" id="card-progress-text">0/0</span>
+      </div>
+      <div class="card-container" onclick="CardMode.flip()">
+        <div class="word-card" id="card-word-card">
+          <div class="card-front">
+            <div class="card-word" id="card-word"></div>
+            <div class="card-phonetic" id="card-phonetic"></div>
+            <div class="card-hint">点击翻转查看释义</div>
+          </div>
+          <div class="card-back">
+            <div class="card-meaning" id="card-meaning"></div>
+            <div class="card-example" id="card-example"></div>
+            <div class="card-extra" id="card-root"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn btn-audio" onclick="event.stopPropagation();CardMode.speak()">🔊</button>
+        <button class="action-btn btn-forgot" onclick="CardMode.mark(false)">不认识</button>
+        <button class="action-btn btn-known" onclick="CardMode.mark(true)">认识</button>
+      </div>
+      <button class="action-btn btn-star" id="card-star-btn" onclick="CardMode.toggleStar()">☆ 收藏</button>
+    </div>
+
+    <!-- ===== 选择题 ===== -->
+    <div class="view" id="view-choice-learn">
+      <div class="learn-progress-bar">
+        <div class="progress-track"><div class="progress-fill" id="choice-progress-fill"></div></div>
+        <span class="progress-text" id="choice-progress-text">0/0</span>
+      </div>
+      <div class="choice-question" id="choice-question"></div>
+      <div class="choice-options" id="choice-options"></div>
+      <div class="choice-result hidden" id="choice-result">
+        <div class="result-meaning" id="choice-result-meaning"></div>
+        <div class="result-example" id="choice-result-example"></div>
+      </div>
+      <button class="btn-next hidden" id="choice-next-btn" onclick="ChoiceMode.next()">下一题 →</button>
+    </div>
+
+    <!-- ===== 拼写模式 ===== -->
+    <div class="view" id="view-spell-learn">
+      <div class="learn-progress-bar">
+        <div class="progress-track"><div class="progress-fill" id="spell-progress-fill"></div></div>
+        <span class="progress-text" id="spell-progress-text">0/0</span>
+      </div>
+      <div class="spell-hint-area">
+        <div class="spell-meaning" id="spell-meaning"></div>
+        <div class="spell-phonetic" id="spell-phonetic"></div>
+        <button class="action-btn btn-audio" style="margin-top:12px;width:auto;padding:8px 20px" onclick="SpellMode.speak()">🔊 发音</button>
+      </div>
+      <div class="spell-input-area" onclick="document.getElementById('spell-input').focus()">
+        <div class="spell-boxes" id="spell-boxes"></div>
+        <input class="spell-input" id="spell-input" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" oninput="SpellMode.onInput(this.value)">
+      </div>
+      <div class="spell-actions">
+        <button class="action-btn btn-hint" onclick="SpellMode.hint()">💡 提示</button>
+        <button class="action-btn btn-submit-spell" onclick="SpellMode.submit()">提交</button>
+      </div>
+      <div class="spell-result hidden" id="spell-result"></div>
+    </div>
+
+    <!-- ===== 复习 ===== -->
+    <div class="view" id="view-review">
+      <div class="review-progress-bar">
+        <div class="progress-track"><div class="progress-fill" id="review-progress-fill"></div></div>
+        <span class="progress-text" id="review-progress-text">0/0</span>
+      </div>
+      <div class="review-card-area" onclick="ReviewSession.flipCard()">
+        <div class="word-card" id="review-word-card">
+          <div class="card-front">
+            <div class="card-word" id="review-word"></div>
+            <div class="card-phonetic" id="review-phonetic"></div>
+            <div class="card-hint">点击翻转</div>
+          </div>
+          <div class="card-back">
+            <div class="card-meaning" id="review-meaning"></div>
+            <div class="card-example" id="review-example"></div>
+            <div class="card-extra" id="review-root"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn btn-audio" onclick="ReviewSession.speak()">🔊</button>
+        <button class="action-btn btn-forgot" onclick="ReviewSession.mark(false)">不认识</button>
+        <button class="action-btn btn-known" onclick="ReviewSession.mark(true)">认识</button>
+      </div>
+    </div>
+
+    <!-- ===== 错题本 ===== -->
+    <div class="view" id="view-wrong-book">
+      <div class="empty-state hidden" id="wrong-empty">
+        <div class="empty-icon">🎉</div>
+        <div class="empty-text">没有错题</div>
+        <div class="empty-sub">继续保持！</div>
+      </div>
+      <div class="word-list" id="wrong-list"></div>
+    </div>
+
+    <!-- ===== 收藏夹 ===== -->
+    <div class="view" id="view-starred">
+      <div class="empty-state hidden" id="starred-empty">
+        <div class="empty-icon">⭐</div>
+        <div class="empty-text">还没有收藏</div>
+        <div class="empty-sub">学习中点击☆收藏单词</div>
+      </div>
+      <div class="word-list" id="starred-list"></div>
+    </div>
+
+    <!-- ===== 词库 ===== -->
+    <div class="view" id="view-wordbook">
+      <div class="search-bar">
+        <input type="text" id="wb-search" placeholder="搜索单词..." oninput="WordBook.search(this.value)">
+      </div>
+      <div class="word-list" id="wb-word-list"></div>
+    </div>
+
+    <!-- ===== 设置 ===== -->
+    <div class="view" id="view-settings">
+      <div class="settings-group">
+        <div class="settings-title">学习计划</div>
+        <div class="setting-item" onclick="Settings.showGoalPicker()">
+          <span class="setting-label">每日目标</span>
+          <span class="setting-value" id="set-daily-goal">20词/天</span>
+          <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item" onclick="Settings.showTimePicker()">
+          <span class="setting-label">提醒时间</span>
+          <span class="setting-value" id="set-reminder-time">09:00</span>
+          <span class="setting-arrow">›</span>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-title">显示</div>
+        <div class="setting-item">
+          <span class="setting-label">深色模式</span>
+          <label class="toggle"><input type="checkbox" id="set-dark" onchange="Settings.toggleDark()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="setting-item">
+          <span class="setting-label">显示音标</span>
+          <label class="toggle"><input type="checkbox" id="set-phonetic" checked onchange="Settings.togglePhonetic()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="setting-item">
+          <span class="setting-label">显示例句</span>
+          <label class="toggle"><input type="checkbox" id="set-example" checked onchange="Settings.toggleExample()"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-title">发音</div>
+        <div class="setting-item">
+          <span class="setting-label">口音</span>
+          <select id="set-accent" onchange="Settings.setAccent(this.value)">
+            <option value="us">美式 English</option>
+            <option value="uk">英式 English</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span class="setting-label">自动播放发音</span>
+          <label class="toggle"><input type="checkbox" id="set-autoplay" onchange="Settings.toggleAutoPlay()"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-title">数据</div>
+        <div class="setting-item" onclick="Settings.exportData()">
+          <span class="setting-label">导出数据</span>
+          <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item" onclick="document.getElementById('import-file').click()">
+          <span class="setting-label">导入数据</span>
+          <span class="setting-arrow">›</span>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="Settings.handleImport(event)">
+        </div>
+        <div class="setting-item danger" onclick="Settings.confirmReset()">
+          <span class="setting-label">重置所有数据</span>
+          <span class="setting-arrow">›</span>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-title">关于</div>
+        <div class="setting-item">
+          <span class="setting-label">版本</span>
+          <span class="setting-value">1.0.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 学习完成 ===== -->
+    <div class="view" id="view-session-complete">
+      <div class="session-complete">
+        <div class="emoji">🎉</div>
+        <h2>学习完成！</h2>
+        <p id="complete-subtitle"></p>
+        <div class="session-stats">
+          <div class="session-stat"><div class="num" id="complete-total">0</div><div class="label">总词数</div></div>
+          <div class="session-stat"><div class="num" id="complete-correct">0</div><div class="label">正确</div></div>
+          <div class="session-stat"><div class="num" id="complete-rate">0%</div><div class="label">正确率</div></div>
+        </div>
+        <button class="btn-next" onclick="App.goBack()">返回首页</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Tab Bar -->
+  <nav id="tab-bar">
+    <div class="tab-item active" onclick="App.switchTab('home')" data-tab="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>
+      <span>首页</span>
+    </div>
+    <div class="tab-item" onclick="App.switchTab('learn')" data-tab="learn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      <span>学习</span>
+    </div>
+    <div class="tab-item" onclick="App.switchTab('review')" data-tab="review">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      <span>复习</span>
+    </div>
+    <div class="tab-item" onclick="App.switchTab('wordbook')" data-tab="wordbook">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <span>词库</span>
+    </div>
+    <div class="tab-item" onclick="App.switchTab('settings')" data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>设置</span>
+    </div>
+  </nav>
+</div>
+
+<!-- ===== 词库选择弹窗 ===== -->
+<div class="modal hidden" id="modal-book-picker">
+  <div class="modal-overlay" onclick="document.getElementById('modal-book-picker').classList.add('hidden')"></div>
+  <div class="modal-content" style="max-height:60vh">
+    <button class="modal-close" onclick="document.getElementById('modal-book-picker').classList.add('hidden')">✕</button>
+    <h3 style="margin:0 0 16px;font-size:18px">选择词库</h3>
+    <div id="book-picker-list"></div>
+  </div>
+</div>
+
+<!-- ===== 单词详情弹窗 ===== -->
+<div class="modal hidden" id="modal-detail">
+  <div class="modal-overlay" onclick="WordDetail.close()"></div>
+  <div class="modal-content">
+    <button class="modal-close" onclick="WordDetail.close()">✕</button>
+    <div class="detail-word" id="detail-word"></div>
+    <div class="detail-phonetic" id="detail-phonetic"></div>
+    <div class="detail-meaning" id="detail-meaning"></div>
+    <div class="detail-example" id="detail-example"></div>
+    <div class="detail-section" id="detail-synonym-section">
+      <div class="detail-label">同义词</div>
+      <div class="detail-tags" id="detail-synonyms"></div>
+    </div>
+    <div class="detail-section" id="detail-antonym-section">
+      <div class="detail-label">反义词</div>
+      <div class="detail-tags" id="detail-antonyms"></div>
+    </div>
+    <div class="detail-section" id="detail-root-section">
+      <div class="detail-label">词根词缀</div>
+      <div class="detail-text" id="detail-root"></div>
+    </div>
+    <div class="detail-actions">
+      <button class="action-btn btn-audio" onclick="WordDetail.speak()">🔊</button>
+      <button class="action-btn btn-star" id="detail-star-btn" onclick="WordDetail.toggleStar()">☆ 收藏</button>
+      <button class="action-btn btn-remove-wrong hidden" id="detail-remove-wrong-btn" onclick="WordDetail.removeFromWrong()">移出错题本</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 目标选择弹窗 ===== -->
+<div class="modal hidden" id="modal-goal">
+  <div class="modal-overlay" onclick="document.getElementById('modal-goal').classList.add('hidden')"></div>
+  <div class="modal-content modal-small">
+    <div class="modal-title">每日目标</div>
+    <div class="picker-options">
+      <div class="picker-option" onclick="Settings.setDailyGoal(10)">10词/天</div>
+      <div class="picker-option" onclick="Settings.setDailyGoal(20)">20词/天</div>
+      <div class="picker-option" onclick="Settings.setDailyGoal(30)">30词/天</div>
+      <div class="picker-option" onclick="Settings.setDailyGoal(50)">50词/天</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 时间选择弹窗 ===== -->
+<div class="modal hidden" id="modal-time">
+  <div class="modal-overlay" onclick="document.getElementById('modal-time').classList.add('hidden')"></div>
+  <div class="modal-content modal-small">
+    <div class="modal-title">提醒时间</div>
+    <input type="time" class="time-picker" id="time-picker-input" value="09:00">
+    <button class="btn-next" style="margin-top:16px" onclick="Settings.setReminderTime(document.getElementById('time-picker-input').value)">确定</button>
+  </div>
+</div>
+
+<!-- ===== 确认重置弹窗 ===== -->
+<div class="modal hidden" id="modal-reset">
+  <div class="modal-overlay" onclick="document.getElementById('modal-reset').classList.add('hidden')"></div>
+  <div class="modal-content modal-small">
+    <div class="modal-title">⚠️ 确认重置</div>
+    <p style="text-align:center;color:var(--text-secondary);margin-bottom:16px">此操作将清除所有学习数据，无法恢复！</p>
+    <div style="display:flex;gap:12px">
+      <button class="action-btn btn-forgot" style="flex:1" onclick="document.getElementById('modal-reset').classList.add('hidden')">取消</button>
+      <button class="action-btn btn-known" style="flex:1;background:#FEE2E2;color:var(--danger)" onclick="Settings.doReset()">确认重置</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/words.js"></script>
+<script src="js/ielts_words.js"></script>
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
