@@ -64,13 +64,14 @@ struct WebViewContainer: UIViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.scrollView.bounces = false
         webView.isOpaque = false
-        webView.backgroundColor = .systemBackground
+        webView.backgroundColor = .white
         webView.navigationDelegate = context.coordinator
         
         // 加载本地 web 文件
-        if let htmlPath = Bundle.main.path(forResource: "index", ofType: "html", inDirectory: "web") {
+        if let bundlePath = Bundle.main.bundlePath {
+            let htmlPath = bundlePath + "/web/index.html"
             let htmlUrl = URL(fileURLWithPath: htmlPath)
-            let directory = htmlUrl.deletingLastPathComponent()
+            let directory = URL(fileURLWithPath: bundlePath)
             webView.loadFileURL(htmlUrl, allowingReadAccessTo: directory)
         }
         

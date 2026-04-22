@@ -31,6 +31,12 @@
     <dict>
         <key>UIColorName</key>
         <string>LaunchScreenColor</string>
+        <key>UIColorRed</key>
+        <integer>255</integer>
+        <key>UIColorGreen</key>
+        <integer>255</integer>
+        <key>UIColorBlue</key>
+        <integer>255</integer>
     </dict>
     <key>UISupportedInterfaceOrientations</key>
     <array>
