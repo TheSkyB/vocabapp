@@ -1,6 +1,7 @@
 import SwiftUI
 import WebKit
 import AudioToolbox
+import UIKit
 
 class HapticBridge: NSObject, WKScriptMessageHandler {
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
